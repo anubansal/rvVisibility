@@ -11,6 +11,12 @@ import android.view.View;
 import com.anubansal.rvvisibility.databinding.ActivityMainBinding;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -19,6 +25,11 @@ public class MainActivity extends AppCompatActivity {
     ActivityMainBinding mBinding;
     MyAdapter adapter;
     LinearLayoutManager layoutManager;
+    int firstVisiblePosition, lastVisiblePosition;
+
+    private static final int INTERVAL = 3000;
+    private Disposable disposable;
+    private Subject<VisiblePositionPOJO> subject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,13 +47,51 @@ public class MainActivity extends AppCompatActivity {
             mBinding.recyclerView.setOnScrollChangeListener(onScrollChangeListener);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        subject = PublishSubject.create();
+        disposable = subject
+                .distinctUntilChanged()
+                .debounce(INTERVAL, TimeUnit.MILLISECONDS)
+                .subscribeWith(new DisposableObserver<VisiblePositionPOJO>() {
+
+                    @Override
+                    public void onNext(VisiblePositionPOJO value) {
+                        Log.d(TAG, "first visible position : " + value.firstPosition);
+                        Log.d(TAG, "last visible position : " + value.lastPosition);
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+                });
+    }
+
     private View.OnScrollChangeListener onScrollChangeListener = new View.OnScrollChangeListener() {
         @Override
         public void onScrollChange(View view, int i, int i1, int i2, int i3) {
-            Log.d(TAG, "first visible position : " + layoutManager.findFirstVisibleItemPosition());
-            Log.d(TAG, "last visible position : " + layoutManager.findLastVisibleItemPosition());
+            firstVisiblePosition = layoutManager.findFirstVisibleItemPosition();
+            lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
+            subject.onNext(new VisiblePositionPOJO(firstVisiblePosition, lastVisiblePosition));
         }
     };
+
+    public class VisiblePositionPOJO {
+        int firstPosition;
+        int lastPosition;
+
+        VisiblePositionPOJO(int firstPosition, int lastPosition) {
+            this.firstPosition = firstPosition;
+            this.lastPosition = lastPosition;
+        }
+    }
 
     private ArrayList<String> initializeArrayList() {
         ArrayList<String> list = new ArrayList<>();
@@ -78,5 +127,13 @@ public class MainActivity extends AppCompatActivity {
         list.add("29");
         list.add("30");
         return list;
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (disposable != null && !disposable.isDisposed()) {
+            disposable.dispose();
+        }
     }
 }
