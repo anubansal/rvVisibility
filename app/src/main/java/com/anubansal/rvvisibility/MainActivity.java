@@ -1,12 +1,11 @@
 package com.anubansal.rvvisibility;
 
 import android.databinding.DataBindingUtil;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.View;
 
 import com.anubansal.rvvisibility.databinding.ActivityMainBinding;
 
@@ -42,14 +41,12 @@ public class MainActivity extends AppCompatActivity {
         mBinding.recyclerView.setAdapter(adapter);
         layoutManager.findFirstVisibleItemPosition();
         layoutManager.findLastVisibleItemPosition();
-//        for now, making it work on ver. >= 23
-        if (Build.VERSION.SDK_INT >= 23)
-            mBinding.recyclerView.setOnScrollChangeListener(onScrollChangeListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        mBinding.recyclerView.addOnScrollListener(onScrollListener);
         subject = PublishSubject.create();
         disposable = subject
                 .distinctUntilChanged()
@@ -74,9 +71,11 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private View.OnScrollChangeListener onScrollChangeListener = new View.OnScrollChangeListener() {
+    private RecyclerView.OnScrollListener onScrollListener = new RecyclerView.OnScrollListener() {
+
         @Override
-        public void onScrollChange(View view, int i, int i1, int i2, int i3) {
+        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            super.onScrolled(recyclerView, dx, dy);
             firstVisiblePosition = layoutManager.findFirstVisibleItemPosition();
             lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
             subject.onNext(new VisiblePositionPOJO(firstVisiblePosition, lastVisiblePosition));
@@ -132,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        mBinding.recyclerView.removeOnScrollListener(onScrollListener);
         if (disposable != null && !disposable.isDisposed()) {
             disposable.dispose();
         }
