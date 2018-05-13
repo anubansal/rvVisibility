@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
@@ -52,10 +51,10 @@ public class MainActivity extends AppCompatActivity {
         disposable = subject
                 .distinctUntilChanged()
                 .debounce(INTERVAL, TimeUnit.MILLISECONDS)
-                .map(new Function<VisiblePositionPOJO, VisiblePositionPOJO>() {
+                .subscribeWith(new DisposableObserver<VisiblePositionPOJO>() {
 
                     @Override
-                    public VisiblePositionPOJO apply(VisiblePositionPOJO value) {
+                    public void onNext(VisiblePositionPOJO value) {
                         int start=0,end=0;
                         if (value.lastPosition < prevFirstPos || value.firstPosition > prevLastPos || prevLastPos == 0 && prevFirstPos == 0) {
                             start = value.firstPosition;
@@ -67,14 +66,7 @@ public class MainActivity extends AppCompatActivity {
                             start = prevLastPos+1;
                             end = value.lastPosition;
                         }
-                        return new VisiblePositionPOJO(start, end);
-                    }
-                })
-                .subscribeWith(new DisposableObserver<VisiblePositionPOJO>() {
-
-                    @Override
-                    public void onNext(VisiblePositionPOJO value) {
-                        for (int i=value.firstPosition; i<=value.lastPosition; i++) {
+                        for (int i=start; i<=end; i++) {
                             Log.d(TAG, "position : " + i);
                         }
                         prevFirstPos = value.firstPosition;
