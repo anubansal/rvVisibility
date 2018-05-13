@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     ActivityMainBinding mBinding;
     MyAdapter adapter;
     LinearLayoutManager layoutManager;
-    int firstVisiblePosition, lastVisiblePosition;
+    int prevFirstPos, prevLastPos;
 
     private static final int INTERVAL = 3000;
     private Disposable disposable;
@@ -55,8 +55,22 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(VisiblePositionPOJO value) {
-                        Log.d(TAG, "first visible position : " + value.firstPosition);
-                        Log.d(TAG, "last visible position : " + value.lastPosition);
+                        int start=0,end=0;
+                        if (value.lastPosition < prevFirstPos || value.firstPosition > prevLastPos || prevLastPos == 0 && prevFirstPos == 0) {
+                            start = value.firstPosition;
+                            end = value.lastPosition;
+                        } else if (value.firstPosition < prevFirstPos && value.lastPosition > prevFirstPos) {
+                            start = value.firstPosition;
+                            end = prevFirstPos-1;
+                        } else if (value.firstPosition > prevFirstPos && value.lastPosition > prevLastPos) {
+                            start = prevLastPos+1;
+                            end = value.lastPosition;
+                        }
+                        for (int i=start; i<=end; i++) {
+                            Log.d(TAG, "position : " + i);
+                        }
+                        prevFirstPos = value.firstPosition;
+                        prevLastPos = value.lastPosition;
                     }
 
                     @Override
@@ -76,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
-            firstVisiblePosition = layoutManager.findFirstVisibleItemPosition();
-            lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
+            int firstVisiblePosition = layoutManager.findFirstVisibleItemPosition();
+            int lastVisiblePosition = layoutManager.findLastVisibleItemPosition();
             subject.onNext(new VisiblePositionPOJO(firstVisiblePosition, lastVisiblePosition));
         }
     };
@@ -89,6 +103,16 @@ public class MainActivity extends AppCompatActivity {
         VisiblePositionPOJO(int firstPosition, int lastPosition) {
             this.firstPosition = firstPosition;
             this.lastPosition = lastPosition;
+        }
+
+        @Override
+        public String toString() {
+            return firstPosition + " " + lastPosition;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return this.firstPosition == ((VisiblePositionPOJO) obj).firstPosition && this.lastPosition == ((VisiblePositionPOJO)obj).lastPosition;
         }
     }
 
