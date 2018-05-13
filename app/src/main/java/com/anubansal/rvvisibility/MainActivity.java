@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.observers.DisposableObserver;
 import io.reactivex.subjects.PublishSubject;
@@ -68,8 +67,6 @@ public class MainActivity extends AppCompatActivity {
                             start = prevLastPos+1;
                             end = value.lastPosition;
                         }
-                        prevFirstPos = value.firstPosition;
-                        prevLastPos = value.lastPosition;
                         return new VisiblePositionPOJO(start, end);
                     }
                 })
@@ -80,6 +77,8 @@ public class MainActivity extends AppCompatActivity {
                         for (int i=value.firstPosition; i<=value.lastPosition; i++) {
                             Log.d(TAG, "position : " + i);
                         }
+                        prevFirstPos = value.firstPosition;
+                        prevLastPos = value.lastPosition;
                     }
 
                     @Override
